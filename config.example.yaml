@@ -180,6 +180,13 @@ access:
 
 # Routing strategy for selecting credentials when multiple match.
 routing:
+  # /llm/{prefix} exposes standard model names while root routes keep their IDs.
+  # Known vendor punctuation is normalized from the built-in model catalog.
+  # Optional scoped aliases map a public name to an existing model under that prefix.
+  # These mappings do not rename models on /v1/models.
+  # model-prefix-aliases:
+  #   my-platform:
+  #     gpt-6.1-sol: vendor-deployment-name
   strategy: "round-robin" # round-robin (default), weighted-round-robin, fill-first
   # weighted-round-robin uses each credential's integer weight (default 1, maximum 1,000,000).
   # Non-positive weights exclude the credential while this strategy is active.
@@ -1318,6 +1325,7 @@ oauth:
 
     # Devin provider behavior.
     # devin:
+    #   show-thinking: false         # hide thought text; upstream reasoning and signatures remain active
     #   sensitive-words:             # optional: words to remove matching lines in system prompts
     #     - "API"
     #     - "proxy"

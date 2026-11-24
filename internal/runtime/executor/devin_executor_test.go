@@ -1745,7 +1745,7 @@ func TestStreamDevinFrames_LateThinkingSignaturesToClaudeStreaming(t *testing.T)
 			}
 			buf.Write(helps.WrapConnectEnvelopeWithFlag(helps.ConnectFlagEndStream, []byte(`{}`)))
 
-			e := &DevinExecutor{}
+			e := NewDevinExecutor(&config.Config{Devin: config.DevinConfig{ShowThinking: true}})
 			out := make(chan cliproxyexecutor.StreamChunk, 50)
 			opts := cliproxyexecutor.Options{
 				SourceFormat:    sdktranslator.FormatClaude,

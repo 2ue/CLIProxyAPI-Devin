@@ -10,6 +10,7 @@ import (
 // knownDevinSuffixes lists recognized model uid suffixes.
 var knownDevinSuffixes = []string{
 	"-none",
+	"-minimal",
 	"-low",
 	"-medium",
 	"-high",
@@ -120,7 +121,17 @@ func ResolveDevinChatModelUID(rawModel string, thinkingLevel string, budgetToken
 	parsedSuffix := thinking.ParseSuffix(cleanModel)
 	baseModel := strings.TrimSpace(parsedSuffix.ModelName)
 	if parsedSuffix.HasSuffix {
-		thinkingLevel = parsedSuffix.RawSuffix
+		thinkingLevel = strings.TrimSpace(parsedSuffix.RawSuffix)
+		if mode, ok := thinking.ParseSpecialSuffix(thinkingLevel); ok {
+			thinkingLevel = mode.String()
+			budgetTokens = 0
+		} else if budget, ok := thinking.ParseNumericSuffix(thinkingLevel); ok {
+			budgetTokens = budget
+			thinkingLevel = ""
+			if budget == 0 {
+				thinkingLevel = "none"
+			}
+		}
 	} else if colonIdx := strings.LastIndex(cleanModel, ":"); colonIdx != -1 {
 		baseModel = strings.TrimSpace(cleanModel[:colonIdx])
 		thinkingLevel = strings.TrimSpace(cleanModel[colonIdx+1:])
@@ -327,6 +338,13 @@ func clampEffort(requested string, allowed []string, defaultEffort string) strin
 		}
 	}
 	if reqLower == "none" {
+		for _, candidate := range []string{"none", "minimal", "low", "medium", "high", "xhigh", "max"} {
+			for _, level := range allowed {
+				if strings.EqualFold(candidate, strings.TrimSpace(level)) {
+					return level
+				}
+			}
+		}
 		return defaultEffort
 	}
 

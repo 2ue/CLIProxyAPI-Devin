@@ -229,6 +229,9 @@ type SensitivePatternRule struct {
 
 // DevinConfig configures provider-wide Devin request behavior.
 type DevinConfig struct {
+	// ShowThinking exposes upstream thought text. Signatures and reasoning execution are preserved when false.
+	ShowThinking bool `yaml:"show-thinking,omitempty" json:"show-thinking,omitempty"`
+
 	// SensitiveWords is a list of words to obfuscate with zero-width characters in system prompts and messages.
 	SensitiveWords []string `yaml:"sensitive-words,omitempty" json:"sensitive-words,omitempty"`
 

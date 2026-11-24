@@ -1000,9 +1000,13 @@ func ParseDevinTrailerError(payload []byte) (statusCode int, err error) {
 		httpCode = http.StatusBadGateway
 	case "unauthenticated":
 		httpCode = http.StatusUnauthorized
+	case "not_found":
+		httpCode = http.StatusNotFound
 	case "permission_denied":
 		if strings.Contains(msgLower, "high demand") {
 			httpCode = http.StatusTooManyRequests
+		} else if strings.Contains(msgLower, "an internal error occurred") {
+			httpCode = http.StatusBadGateway
 		} else {
 			httpCode = http.StatusForbidden
 		}

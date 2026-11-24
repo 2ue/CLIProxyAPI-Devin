@@ -341,6 +341,9 @@ func (e *DevinExecutor) Execute(ctx context.Context, auth *cliproxyauth.Auth, re
 		reporter.SetResponseModel(respLog.Usage.ModelName)
 	}
 
+	if e.cfg == nil || !e.cfg.Devin.ShowThinking {
+		interactionsJSON = helps.DevinHideThinkingText(interactionsJSON)
+	}
 	targetFormat := cliproxyexecutor.ResponseFormatOrSource(opts)
 	var param any
 	out := sdktranslator.TranslateNonStream(ctx, sdktranslator.FormatInteractions, targetFormat, req.Model, helps.ApplyPatchOriginalRequest(req, opts), req.Payload, interactionsJSON, &param)
@@ -466,8 +469,19 @@ func (e *DevinExecutor) prepareDevinHTTPRequest(ctx context.Context, auth *clipr
 	// Translation drops Claude effort directives and keeps only the top-level
 	// effort, which directive-sending clients pin to a cache placeholder.
 	if opts.SourceFormat == sdktranslator.FormatClaude {
-		if directive := thinking.ClaudeEffortDirective(req.Payload); directive != "" {
-			thinkingLevel = directive
+		switch strings.ToLower(strings.TrimSpace(ojson.GetBytesNoCopy(req.Payload, "thinking.type").String())) {
+		case "disabled", "between_tools":
+			thinkingLevel = "none"
+			budgetTokens = 0
+		default:
+			if directive := thinking.ClaudeEffortDirective(req.Payload); directive != "" {
+				thinkingLevel = directive
+			}
+		}
+	}
+	if opts.SourceFormat == sdktranslator.FormatGemini {
+		if level, budget, ok := helps.DevinGeminiThinkingControl(req.Payload); ok {
+			thinkingLevel, budgetTokens = level, budget
 		}
 	}
 	// Devin cannot fetch a remote uri or take audio, video or documents. A user turn left
@@ -655,6 +669,9 @@ func (e *DevinExecutor) streamDevinFramesForAuth(
 			return true
 		}
 		trimmed := bytes.TrimSpace(rawJSON)
+		if e.cfg == nil || !e.cfg.Devin.ShowThinking {
+			trimmed = helps.DevinHideThinkingText(trimmed)
+		}
 
 		eventType := ojson.GetBytesNoCopy(trimmed, "event_type").String()
 		isFailedEvent := eventType == "response.failed" || eventType == "interaction.failed"
@@ -3083,7 +3100,17 @@ func publishDevinUsageFailure(ctx context.Context, reporter *helps.UsageReporter
 // timestamp for that window, retries only after the reset. Transient
 // capacity and generic rate-limit 429s stay model-scoped.
 func devinTrailerStatusError(code int, msg string, auth *cliproxyauth.Auth) statusErr {
-	return devinQuotaScopedStatusError(statusErr{code: code, msg: msg}, auth, time.Now())
+	return devinQuotaScopedStatusError(devinRequestScopedStatusError(statusErr{code: code, msg: msg}), auth, time.Now())
+}
+
+func devinRequestScopedStatusError(err statusErr) statusErr {
+	if err.code == http.StatusBadRequest || err.code == http.StatusForbidden {
+		message := strings.ToLower(err.msg)
+		if strings.Contains(message, "blocked by our content policy") || strings.Contains(message, "refused by anthropic's content policy") {
+			err.requestScoped = true
+		}
+	}
+	return err
 }
 
 // devinQuotaScopedStatusError upgrades a 429 to credential scope when its
@@ -3133,7 +3160,7 @@ func newDevinStatusErrorForAuth(code int, headers http.Header, body []byte, auth
 	}
 	// An explicit Retry-After header parsed above keeps precedence inside
 	// devinQuotaScopedStatusError; signal data only fills the gap.
-	return devinQuotaScopedStatusError(err, auth, time.Now())
+	return devinQuotaScopedStatusError(devinRequestScopedStatusError(err), auth, time.Now())
 }
 
 func devinAuthCredentials(auth *cliproxyauth.Auth) (apiKey string, baseURL string, deviceSeed string) {

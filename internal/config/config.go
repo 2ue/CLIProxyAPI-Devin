@@ -12,6 +12,10 @@ type ServerResponseCompression = ResponseCompressionConfig
 
 // Config represents the application's configuration, loaded from a YAML file.
 type Config struct {
+	// ModelPrefixAliases maps scoped public model names to existing registered model IDs.
+	// It only affects /llm/{prefix}; root model listings and requests are unchanged.
+	ModelPrefixAliases map[string]map[string]string `yaml:"model-prefix-aliases,omitempty" json:"model-prefix-aliases,omitempty"`
+
 	// ServerResponseCompression is the JSON-visible mirror of the downstream
 	// response compression settings (YAML: server.response-compression).
 	ServerResponseCompression ResponseCompressionConfig `yaml:"-" json:"response-compression"`

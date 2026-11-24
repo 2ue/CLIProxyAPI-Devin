@@ -128,6 +128,19 @@ func nativeInteractionsExecutionError() *interfaces.ErrorMessage {
 // router selected a built-in provider, it skips model->provider resolution and uses the router's
 // provider (with an optional target model); otherwise it falls back to the registry-based path.
 func (h *BaseAPIHandler) providersForExecution(modelName, originalRequestedModel string, allowImageModel bool, routeDecision modelRouteDecision, execOptions modelExecutionOptions) ([]string, string, *interfaces.ErrorMessage) {
+	if routeDecision.ScopedPrefix {
+		providers := util.GetProviderName(routeDecision.ScopedBase)
+		if len(providers) == 0 {
+			return nil, "", &interfaces.ErrorMessage{StatusCode: http.StatusNotFound, Error: fmt.Errorf("model not found in selected prefix")}
+		}
+		if errMsg := h.validateImageOnlyModel(routeDecision.Model, allowImageModel); errMsg != nil {
+			return nil, "", errMsg
+		}
+		if errMsg := h.validateSpeechOnlyModel(routeDecision.Model, execOptions.AllowSpeechModel); errMsg != nil {
+			return nil, "", errMsg
+		}
+		return providers, routeDecision.Model, nil
+	}
 	forcedProvider := strings.ToLower(strings.TrimSpace(execOptions.ForcedProvider))
 	if forcedProvider != "" {
 		if routeDecision.ExecutorPluginID != "" {
@@ -165,6 +178,7 @@ func (h *BaseAPIHandler) providersForExecution(modelName, originalRequestedModel
 }
 
 func (h *BaseAPIHandler) getRequestDetailsWithOptions(modelName string, allowImageModel, allowSpeechModel bool) (providers []string, normalizedModel string, err *interfaces.ErrorMessage) {
+	modelName = normalizeDevinRequestSuffix(modelName)
 	resolvedModelName := modelName
 	initialSuffix := thinking.ParseSuffix(modelName)
 	if initialSuffix.ModelName == "auto" {
@@ -321,6 +335,8 @@ func (h *BaseAPIHandler) modelRouterHost() PluginModelRouterHost {
 }
 
 type modelRouteDecision struct {
+	ScopedPrefix     bool
+	ScopedBase       string
 	ExecutorPluginID string
 	Provider         string
 	Model            string
@@ -362,6 +378,9 @@ func modelRoutersEnabled(host PluginModelRouterHost, skipPluginID string) bool {
 }
 
 func (h *BaseAPIHandler) applyModelRouter(ctx context.Context, handlerType, modelName string, rawJSON []byte, stream bool, execOptions modelExecutionOptions) modelRouteDecision {
+	if decision, ok := prefixedModelRoute(ctx, modelName); ok {
+		return decision
+	}
 	var decision modelRouteDecision
 	host := h.modelRouterHost()
 	if host == nil || !modelRoutersEnabled(host, execOptions.SkipRouterPluginID) {

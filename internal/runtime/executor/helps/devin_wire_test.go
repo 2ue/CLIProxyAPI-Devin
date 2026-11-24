@@ -35,6 +35,25 @@ func TestConnectEnvelopeFraming(t *testing.T) {
 	}
 }
 
+func TestDevinTrailerModelAndInternalFailures(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		payload string
+		want    int
+	}{
+		{"unavailable model", `{"error":{"code":"not_found","message":"This model is no longer available for your account."}}`, 404},
+		{"mislabelled internal error", `{"error":{"code":"permission_denied","message":"an internal error occurred (trace ID: test)"}}`, 502},
+		{"account permission", `{"error":{"code":"permission_denied","message":"model access is not allowed for this account"}}`, 403},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			code, err := ParseDevinTrailerError([]byte(tc.payload))
+			if err == nil || code != tc.want {
+				t.Fatalf("trailer = (%d, %v), want status %d and error", code, err, tc.want)
+			}
+		})
+	}
+}
+
 func TestGenerateDevinDeviceFingerprint(t *testing.T) {
 	fp1 := GenerateDevinDeviceFingerprint("seed-1")
 	if len(fp1) != DevinFingerprintHexLen {

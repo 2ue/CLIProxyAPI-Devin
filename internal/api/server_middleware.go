@@ -412,6 +412,8 @@ func (s *Server) serveExampleAPIKeyWarningPage(c *gin.Context) {
 
 func isExampleAPIKeySafeModeProxyPath(path string) bool {
 	switch {
+	case path == "/llm" || strings.HasPrefix(path, "/llm/"):
+		return true
 	case path == "/v1" || strings.HasPrefix(path, "/v1/"):
 		return true
 	case path == "/v1beta" || strings.HasPrefix(path, "/v1beta/"):

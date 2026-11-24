@@ -61,6 +61,7 @@ func (s *Server) setupRoutes() {
 	claudeCodeHandlers := claude.NewClaudeCodeAPIHandler(s.handlers)
 	openaiResponsesHandlers := openai.NewOpenAIResponsesAPIHandler(s.handlers)
 	openaiResponsesHandlers.AccessManager = s.accessManager
+	s.setupModelPrefixRoutes(openaiHandlers, claudeCodeHandlers, geminiHandlers, openaiResponsesHandlers)
 	s.codexLiveHandler = codexlive.NewHandler(s.handlers.AuthManager, s.cfg)
 	s.museCodeHandler = musecode.NewHandler(s.handlers.AuthManager, s.cfg)
 	s.museCodeHandler.SetModelListHooks(s.loadMuseCodeHomeModels, s.writeModelListResponse)

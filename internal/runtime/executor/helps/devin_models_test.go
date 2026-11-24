@@ -708,6 +708,24 @@ func TestResolveDevinChatModelUID(t *testing.T) {
 	}
 }
 
+func TestResolveDevinNumericSuffixOverridesBody(t *testing.T) {
+	for _, tc := range []struct {
+		model string
+		want  string
+	}{
+		{"devin/claude-opus-5-5(2048)", "claude-opus-5-5-low"},
+		{"devin/claude-opus-5-5(16384)", "claude-opus-5-5-medium"},
+		{"devin/gpt-5-6-sol(0)", "gpt-5-6-sol-none"},
+		{"devin/gpt-5-6-sol(none)", "gpt-5-6-sol-none"},
+	} {
+		t.Run(tc.model, func(t *testing.T) {
+			if got := ResolveDevinChatModelUID(tc.model, "max", 64000); got != tc.want {
+				t.Fatalf("resolved model = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestResolveDevinChatModelUID_AllCatalogModels(t *testing.T) {
 	models := registry.GetDevinModels()
 	if len(models) == 0 {

@@ -105,7 +105,7 @@ func TestDevinStreamEmitsContentBeforeThinkingCloses(t *testing.T) {
 				Model:   "devin/swe-2",
 				Payload: sdktranslator.TranslateRequest(format, sdktranslator.FormatInteractions, "devin/swe-2", original, true),
 			}
-			e := &DevinExecutor{}
+			e := NewDevinExecutor(&config.Config{Devin: config.DevinConfig{ShowThinking: true}})
 			e.streamDevinFrames(context.Background(), io.MultiReader(readers...), req, opts, "swe-2-high", format, nil, out)
 			drain()
 			if checkpoints != len(stages) {
