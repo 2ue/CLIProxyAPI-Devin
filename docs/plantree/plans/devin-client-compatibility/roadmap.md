@@ -2,21 +2,24 @@
 
 ## Done
 
-- Existing SDK metadata adaptation deployed as bad21ae3.
-- All 31 Claude/Gemini/GPT models completed isolated native-client file reads.
-- Representative builtin tools and MCP round trips passed in all three native clients.
-- Reproduced and repaired numeric thinking suffixes, explicit disabled controls, Gemini zero budgets, model-not-found classification, and request-scoped refusals.
+- SDK identity metadata adaptation deployed as bad21ae3.
+- All 31 Claude/Gemini/GPT models passed isolated native-client file reads.
+- Representative builtin tools and MCP round trips passed in all three clients.
+- Repaired Devin numeric/disabled/Gemini thinking controls, suffix credential routing, request-scoped refusals and model-not-found classification.
+- Added generic `/llm/{prefix}` HTTP routes and official model identities without changing root IDs or existing aliases.
+- Added optional scoped aliases and default-hidden Devin thought display with signature retention.
+- Targeted tests, race checks, formatting, build, and final `go test -p 1 ./...` passed.
+- Pushed eaa8df00, pulled and built on 87, passed canary and production inference.
+- Six production native-client tool/MCP tasks passed. Original local configs and remote config/account JSON files were unchanged.
 
 ## In Progress
 
-- Generic `/llm/{prefix}` routes, canonical-name reconciliation, optional scoped aliases, and namespace restriction implemented.
-- Scoped stream metadata, root compatibility, authentication, three native clients, tools/MCP and thought-display controls verified.
-- Complete the final repository checks before publish/deploy.
+None.
 
 ## Next
 
-- Push to the independent repository, build on 87, canary, deploy, and repeat production checks.
+- Observe upstream model availability and public network reliability during normal use.
 
 ## Deferred
 
-- Scoped WebSockets, shared-provider refactors, and upstream upgrades.
+- Scoped WebSockets/realtime/tunnels and unrelated upstream upgrades.
