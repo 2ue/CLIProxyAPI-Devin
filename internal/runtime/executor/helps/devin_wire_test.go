@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/MoeForge/moego/ojson"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/encoding/protowire"
 )
@@ -156,6 +157,23 @@ func TestSanitizeDevinSystemPrompt_AndSensitiveWords(t *testing.T) {
 	}
 	if strings.Contains(sanitized, "API") && !strings.Contains(sanitized, zeroWidthSpace) {
 		t.Errorf("API was not obfuscated with zero-width space")
+	}
+}
+
+func TestSanitizeDevinSystemPrompt_ClaudeAgentSDKIdentity(t *testing.T) {
+	const identity = "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+	prompt := "x-anthropic-billing-header: cc_version=2.1.280;\r\n  " + identity + "  \r\nRead the requested files.\r\nDo not remove this quoted text: " + identity
+	want := "Read the requested files.\nDo not remove this quoted text: " + identity
+	if got := SanitizeDevinSystemPrompt(prompt, nil); got != want {
+		t.Fatalf("SanitizeDevinSystemPrompt() = %q, want %q", got, want)
+	}
+	wire := BuildDevinGetChatMessageRequest("test-token", "", "claude-opus-5-5-high", prompt, nil, nil, nil, 1024, "test-session", "test-cascade", nil)
+	_, body, err := FinalizeDevinPayload(wire, func(body []byte) []byte { return body })
+	if err != nil {
+		t.Fatalf("FinalizeDevinPayload: %v", err)
+	}
+	if got := ojson.GetBytesNoCopy(body, "system_prompt").String(); got != want {
+		t.Fatalf("wire system prompt = %q, want %q", got, want)
 	}
 }
 

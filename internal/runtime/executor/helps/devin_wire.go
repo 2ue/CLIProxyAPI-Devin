@@ -634,6 +634,9 @@ func SanitizeDevinSystemPrompt(prompt string, matcher *SensitiveWordMatcher) str
 		if strings.HasPrefix(trimmed, "You are Claude Code") {
 			continue
 		}
+		if trimmed == "You are a Claude agent, built on Anthropic's Claude Agent SDK." {
+			continue
+		}
 		if strings.Contains(trimmed, "authorized security testing") || strings.Contains(trimmed, "destructive techniques, DoS attacks") {
 			continue
 		}
